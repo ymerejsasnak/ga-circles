@@ -4,6 +4,7 @@ import random as r
 
 
 SCR_SIZE = 800
+TEXT_SIZE = 20
 
 BG_COLOR = (200, 200, 200)
 RED = (200, 0, 0)
@@ -21,7 +22,7 @@ POSITION_MUTATION_AMOUNT = 800
 RADIUS_MUTATION_AMOUNT = 2
 MUTATION_RATE = 40
 
-PAUSE_AMOUNT = 10 # in ms
+DEFAULT_SPEED = 1 # in ms
 
 
 def overlap(circle1, circle2):
@@ -124,6 +125,7 @@ class GA:
                 child_y = SCR_SIZE - child_radius - 1
             
             next_gen.append(FitCircle(child_x, child_y, child_radius))
+            
         self.generation = next_gen
         self.generation_count += 1
         
@@ -136,11 +138,11 @@ class GA:
 def run():
     # Initialize and create screen object.
     pygame.init()
-    screen = pygame.display.set_mode((SCR_SIZE, SCR_SIZE))
+    screen = pygame.display.set_mode((SCR_SIZE, SCR_SIZE + TEXT_SIZE))
     pygame.display.set_caption('Genetic Algorithm')
     
     running = True
-    
+    speed = DEFAULT_SPEED
     
     field = make_field()
     ga = GA()
@@ -157,20 +159,36 @@ def run():
         ga.fitness_calculation(field)
         ga.fitness_sort()
         ga.generation[0].draw(screen) # only showing the most fit each gen
-        #info
-        #print generation#
-        #print highest fitness/radius
-        pygame.display.flip()
-        pygame.time.wait(PAUSE_AMOUNT)
+                
+        # Display generation and radius (fitness is usually radius)
+        string1 = 'Generation: ' + str(ga.generation_count) 
+        string2 = 'Largest Radius: ' + str(ga.generation[0].radius)
+        string3 = 'Simulation Speed: ' + str(speed // 100)
+        font = pygame.font.Font(None, 20)
+        text1 = font.render(string1, 1, (10, 10, 10))
+        screen.blit(text1, (0, SCR_SIZE))
+        text2 = font.render(string2, 1, (10, 10, 10))
+        screen.blit(text2, (SCR_SIZE // 4, SCR_SIZE))
+        text3 = font.render(string3, 1, (10, 10, 10))
+        screen.blit(text3, (SCR_SIZE // 2, SCR_SIZE))
         
-        print('Generation: ' + str(ga.generation_count) + '\t\tRadius: ' + str(ga.generation[0].radius))
+        
+        pygame.display.flip()
+        
+        pygame.time.wait(1000 - speed)
         
         ga.next_generation()
     
         # Watch for keyboard and mouse events.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-               running = False
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                speed = min(speed + 100, 1000)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                speed = max(speed - 100, 1)
+            
+                
         
         
 
