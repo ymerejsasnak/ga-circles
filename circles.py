@@ -3,8 +3,7 @@ import math
 import random as r
 
 
-SCR_WIDTH = 400
-SCR_HEIGHT = 400
+SCR_SIZE = 800
 
 BG_COLOR = (200, 200, 200)
 RED = (200, 0, 0)
@@ -14,15 +13,15 @@ GA_CIRCLE_COLOR = (200, 50, 50)
 
 MEDIAN_FIELD_RADIUS = 10
 FIELD_RADIUS_VARIATION = 5
-FIELD_CIRCLE_COUNT = 200
+FIELD_CIRCLE_COUNT = 50
 
 GENERATION_SIZE = 1000
-REPRODUCER_GROUP_SIZE = 20
-POSITION_MUTATION_AMOUNT = 400
-RADIUS_MUTATION_AMOUNT = 20
+REPRODUCER_GROUP_SIZE = 100
+POSITION_MUTATION_AMOUNT = 800
+RADIUS_MUTATION_AMOUNT = 2
 MUTATION_RATE = 40
 
-PAUSE_AMOUNT = 0 # in ms
+PAUSE_AMOUNT = 10 # in ms
 
 
 def overlap(circle1, circle2):
@@ -53,8 +52,8 @@ class FieldCircle:
     def __init__(self):
         self.radius = r.randint(MEDIAN_FIELD_RADIUS - FIELD_RADIUS_VARIATION,
                                 MEDIAN_FIELD_RADIUS + FIELD_RADIUS_VARIATION)
-        self.x = r.randint(self.radius, SCR_WIDTH - self.radius)
-        self.y = r.randint(self.radius, SCR_HEIGHT - self.radius)
+        self.x = r.randint(self.radius, SCR_SIZE - self.radius)
+        self.y = r.randint(self.radius, SCR_SIZE - self.radius)
     
     def draw(self, surface):
         pygame.draw.circle(surface, (0,0,0), (self.x, self.y), self.radius, 2)
@@ -80,8 +79,8 @@ class GA:
         self.generation = []
         for i in range(GENERATION_SIZE):
             radius = r.randrange(20)
-            self.generation.append(FitCircle(r.randint(radius, SCR_WIDTH - radius),
-                                            r.randrange(radius, SCR_HEIGHT - radius),
+            self.generation.append(FitCircle(r.randint(radius, SCR_SIZE - radius),
+                                            r.randrange(radius, SCR_SIZE - radius),
                                             radius))
     
 
@@ -109,20 +108,20 @@ class GA:
             
             # mutate
             if r.randint(1, 100) < MUTATION_RATE:
-                child_radius = max(child_radius + r.randint(-RADIUS_MUTATION_AMOUNT, RADIUS_MUTATION_AMOUNT), 0)
-            if r.randint(1, 100) < MUTATION_RATE:
-                child_x += r.randint(-POSITION_MUTATION_AMOUNT, POSITION_MUTATION_AMOUNT)
-                child_y += r.randint(-POSITION_MUTATION_AMOUNT, POSITION_MUTATION_AMOUNT)
+                child_radius += r.randrange(RADIUS_MUTATION_AMOUNT)
+            #if r.randint(1, 100) < MUTATION_RATE:
+                child_x = (child_x + r.randint(-POSITION_MUTATION_AMOUNT, POSITION_MUTATION_AMOUNT)) % SCR_SIZE
+                child_y = (child_y + r.randint(-POSITION_MUTATION_AMOUNT, POSITION_MUTATION_AMOUNT)) % SCR_SIZE
                 
             # keep child in bounds
             if child_x - child_radius < 0:
                 child_x = child_radius
-            elif child_x + child_radius > SCR_WIDTH - 1:
-                child_x = SCR_WIDTH - child_radius - 1
+            elif child_x + child_radius > SCR_SIZE - 1:
+                child_x = SCR_SIZE - child_radius - 1
             if child_y - child_radius < 0:
                 child_y = child_radius
-            elif child_y + child_radius > SCR_HEIGHT - 1:
-                child_y = SCR_HEIGHT - child_radius - 1
+            elif child_y + child_radius > SCR_SIZE - 1:
+                child_y = SCR_SIZE - child_radius - 1
             
             next_gen.append(FitCircle(child_x, child_y, child_radius))
         self.generation = next_gen
@@ -137,7 +136,7 @@ class GA:
 def run():
     # Initialize and create screen object.
     pygame.init()
-    screen = pygame.display.set_mode((SCR_WIDTH, SCR_HEIGHT))
+    screen = pygame.display.set_mode((SCR_SIZE, SCR_SIZE))
     pygame.display.set_caption('Genetic Algorithm')
     
     running = True
@@ -164,6 +163,7 @@ def run():
         pygame.display.flip()
         pygame.time.wait(PAUSE_AMOUNT)
         
+        print('Generation: ' + str(ga.generation_count) + '\t\tRadius: ' + str(ga.generation[0].radius))
         
         ga.next_generation()
     
