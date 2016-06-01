@@ -1,3 +1,4 @@
+import sys
 import pygame
 import random as r
 
@@ -21,6 +22,9 @@ EAST = (1, 0)
 SOUTH = (0, 1)
 WEST = (-1, 0)
 GENES = (NORTH, EAST, SOUTH, WEST)
+
+GENERATION_SIZE = 20
+REPRODUCER_GROUP_SIZE = 5
 
 
 
@@ -57,7 +61,7 @@ MAZE1 = ['####################',
          '#1111###3333###5555#',
          '#1111###44444444444#',
          '#1111###44444444444#',
-         '#SSSS###44444444444#',
+         '#S111###44444444444#',
          '####################']
          
 
@@ -68,9 +72,12 @@ class Grid:
     
     def load_grid(self, grid):
         # proper size and contents are assumed
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
-                self.cells[(j, i)] = grid[i][j]
+        for y in range(GRID_SIZE):
+            for x in range(GRID_SIZE):
+                self.cells[(x, y)] = grid[y][x]
+                if grid[y][x] == START:
+                    self.start_position = (x, y)
+                    
 
     def draw_grid(self, screen):
         for position, contents in self.cells.items():
@@ -93,25 +100,66 @@ class Grid:
 
 class Runner:
     
-    def __init__(self):
-        #temp - hard coded start spot:
-        self.position = (1, 18)
-        self.genome = [r.choice(GENES) for x in range(GENOME_LENGTH)]
-        self.current = 0
+    def __init__(self, start_position, genome):
+        self.position = start_position
+        self.genome = genome
         self.color = (r.randint(0, 150), r.randint(0, 100), r.randint(100, 250))
         
-    def move(self, cells):
-        direction = self.genome[self.current]
-        self.current += 1
+        self.finished = False
+
+        self.fitness = 1000 # for now, will have to tweak this...
+
+    def move(self, cells, turn):
+        direction = self.genome[turn]
         target = (self.position[0] + direction[0], self.position[1] + direction[1])
-        if cells[target] != WALL:
+        if cells[target] == WALL:
+            self.fitness -= 10
+        else:
             self.position = target
+            self.fitness -= 1
+            
+        if cells[target] == FINISH:
+            self.finished == True
+            self.fitness *= 10
+            
+        if turn == GENOME_LENGTH - 1 and self.position in ZONES:
+            self.fitness *= int(cells[self.position])
     
     def draw(self, screen):
-        pygame.draw.rect(screen, self.color, (self.position[0] * CELL_SIZE, self.position[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        size = CELL_SIZE
+        x = self.position[0] * size + size // 2
+        y = self.position[1] * size + size // 2
+        radius = size // 3
+        pygame.draw.circle(screen, self.color, (x, y), radius)
         
         
+class GA:
+    
+    def __init__(self, start_position):
+        self.generation = []
+        for runner in range(GENERATION_SIZE):
+            genome = [r.choice(GENES) for x in range(GENOME_LENGTH)]
+            self.generation.append(Runner(start_position, genome))
+        self.generation_count = 1
+    
+    def next_generation(self, start_position):
+        # sort based on fitness
+        self.generation.sort(key=lambda runner: runner.fitness)
         
+        next_gen = []
+        for i in range(GENERATION_SIZE):
+            parents = r.sample(self.generation[:REPRODUCER_GROUP_SIZE], 2)
+            genome_split = r.randint(GENOME_LENGTH // 3, GENOME_LENGTH // 3 * 2)
+            child_genome = parents[0].genome[:genome_split] + parents[1].genome[genome_split:]
+            
+            
+            # mutate
+            
+            
+            next_gen.append(Runner(start_position, child_genome))
+            
+        self.generation = next_gen
+        self.generation_count += 1
            
         
         
@@ -120,34 +168,35 @@ def run():
     screen = pygame.display.set_mode((SCR_SIZE, SCR_SIZE ))
     pygame.display.set_caption('GA Maze Solver')
     
-    
-    running = True
-    
         
     grid = Grid()
     grid.load_grid(MAZE1)
-        
-    runners = [Runner() for x in range(10)]
-        
-    while running:
     
-        screen.fill(FLOOR_COLOR)
+    ga = GA(grid.start_position)
         
-        grid.draw_grid(screen)
+    while True:
+    
+        for turn in range(GENOME_LENGTH):
+            
+            screen.fill(FLOOR_COLOR)
+            grid.draw_grid(screen)
         
-        for runner in runners:
-            runner.move(grid.cells)
-            runner.draw(screen)
+            for runner in ga.generation:
+                runner.move(grid.cells, turn)
+                runner.draw(screen)
+            
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                   running = sys.exit()
+            
+            #show generation, turn, best fitness, speed?
+            
+            pygame.display.flip()
+            
+            #pygame.time.delay(100)
         
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-               running = False
-        
-        
-        pygame.display.flip()
-        
-        pygame.time.delay(100)
+        ga.next_generation(grid.start_position)
 
 run()
 
