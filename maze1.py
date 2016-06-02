@@ -24,26 +24,26 @@ WEST = (-1, 0)
 GENES = (NORTH, EAST, SOUTH, WEST)
 
 GENERATION_SIZE = 1000
-REPRODUCER_GROUP_SIZE = 100
-MUTATION_RATE = 20
+REPRODUCER_GROUP_SIZE = 50
+MUTATION_RATE = 40
 
 
 
 '''notes:
-PROBLEMS!
-to fix: gen size to 1, uncomment delay, print out fitness to watch as it goes...etc
-fitness will start at a set value (1000?) then subtract one for each movement (so getting
-to finish faster is better), subtract more for hitting a wall, then give multiplier(?)
-bonus for landing in better 'zones' (to reward getting closer to finish) 
+maybe completely change genome so that it is a series of instructions for what to do
+(nesw) depending on 4 cell neighborhood (nesw) states (wall, not visited, visited) 
+[this will be 4 (neighbors) * 3 possible states = 12 'situations' to have instructions for]
+[but maybe also check zone rating for < or > if not visited...so all states are
+wall, visited, not-visited lower rating, not-visited same rating, and not-visted greater rating,
+which is 5 * 4 neighbors = 20 possible situations...still easy to code for...DO IT!]
+therefore it can naturally select for better strategies rather than better
+meaningless strings of random directions
+(this should be able to evolve better solutions, especially to harder maps like MAZE3)
+
 '''
 
 
-
-
-
-
-
-# maze representation ideas --- replace . with numbers representing zones to grade fitness
+ 
 MAZE1 = ['####################',
          '#33333333333###FFFF#',
          '#33333333333###9999#',
@@ -63,6 +63,48 @@ MAZE1 = ['####################',
          '#0000###55556667777#',
          '#0000###55666666666#',
          '#S000###55666666666#',
+         '####################']
+
+MAZE2 = ['####################',
+         '#45555666777888999F#',
+         '#445555666777888999#',
+         '#444555566677788899#',
+         '#444455556667778889#',
+         '#344445555666777888#',
+         '#334444555566677788#',
+         '#333444455556667778#',
+         '#333344445555666777#',
+         '#233334444555566677#',
+         '#223333444455556667#',
+         '#222333344445555666#',
+         '#122233334444555566#',
+         '#112223333444455556#',
+         '#111222333344445555#',
+         '#111122233334444555#',
+         '#000112223333444455#',
+         '#000111222333344445#',
+         '#S00111122233334444#',
+         '####################']
+
+MAZE3 = ['####################',
+         '####################',
+         '##2222##5555555555##',
+         '##2##2##4##5#5#5#5##',
+         '##1##2##4##5#5#5#5##',
+         '##1##2##4##5#5#5#6##',
+         '##1##2##4##6#6#6#6##',
+         '##1##2##4##6#6#6#6##',
+         '##1##2##4##6#6#6#6##',
+         '##1##2##4##6#6#6#6##',
+         '##1##3##4##6#6#6#6##',
+         '##1##3##4##6#6#6#6##',
+         '##1##3##4##6#6#6#7##',
+         '##1##3##4##7#7#7#7##',
+         '##1##3##4##7#7#7#8##',
+         '##1##3##4##7#7#8#9##',
+         '##1##3##4##7#8#9#9##',
+         '##S##3333##888999F##',
+         '####################',
          '####################']
          
 
@@ -107,6 +149,7 @@ class Runner:
         self.color = (r.randint(0, 150), r.randint(0, 100), r.randint(100, 250))
         
         self.finished = False
+        self.visited = set()
 
         self.fitness = 0
 
@@ -117,16 +160,21 @@ class Runner:
         direction = self.genome[turn]
         target = (self.position[0] + direction[0], self.position[1] + direction[1])
         if cells[target] != WALL:
+            self.visited.update(self.position) 
             self.position = target
-            if cells[self.position] in ZONES:
-                self.fitness += int(cells[self.position]) * 2
+            if self.position in self.visited:
+                self.fitness -= turn
+            elif cells[self.position] in ZONES:
+                self.fitness += int(cells[self.position])
+            
+        elif cells[target] == WALL:
+            self.fitness -= 20
             
         if cells[self.position] == FINISH:
             self.finished = True
-            self.fitness *= 500 - turn  # major fitness bonus for finishing
-            
-        if turn == GENOME_LENGTH - 1 and cells[self.position] in ZONES:
-            self.fitness *= int(cells[self.position]) * 2
+            self.fitness = 1000000 - turn  # major fitness bonus for finishing (less turns = better bonus)
+        elif turn == GENOME_LENGTH - 1 and cells[self.position] in ZONES:
+            self.fitness += int(cells[self.position]) * 10
     
     def draw(self, screen):
         size = CELL_SIZE
@@ -152,12 +200,12 @@ class GA:
         next_gen = []
         for i in range(GENERATION_SIZE):
             parents = r.sample(self.generation[:REPRODUCER_GROUP_SIZE], 2)
-            genome_split = r.randint(GENOME_LENGTH // 5, GENOME_LENGTH // 5 * 4)
+            genome_split = r.randrange(GENOME_LENGTH // 4, GENOME_LENGTH // 4 * 3)
             child_genome = parents[0].genome[:genome_split] + parents[1].genome[genome_split:]
             
             #mutate
             for gene in child_genome:
-                if MUTATION_RATE < r.randrange(100):
+                if MUTATION_RATE > r.randrange(100):
                     gene = r.choice(GENES)
                     
             
@@ -176,7 +224,7 @@ def run():
     
         
     grid = Grid()
-    grid.load_grid(MAZE1)
+    grid.load_grid(MAZE3)
     
     ga = GA(grid.start_position)
         
@@ -201,7 +249,6 @@ def run():
             pygame.display.flip()
             
             #pygame.time.delay(100)
-        print(str(len(ga.generation)))
         
         print('gen: ', str(ga.generation_count), '\t\t', 'best fit: ', int(ga.generation[0].fitness))
         ga.next_generation(grid.start_position)
