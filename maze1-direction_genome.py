@@ -25,7 +25,7 @@ GENES = (NORTH, EAST, SOUTH, WEST)
 
 GENERATION_SIZE = 100
 REPRODUCER_GROUP_SIZE = 20
-MUTATION_RATE = 10
+MUTATION_RATE = 5
 
 
 
@@ -40,6 +40,9 @@ therefore it can naturally select for better strategies rather than better
 meaningless strings of random directions
 (this should be able to evolve better solutions, especially to harder maps like MAZE3)
 
+also add options for only showing best fit run  (or best and worst or best x runs or whatever)
+also store generations and let it run for a while so user cna just pick which gen to watch?
+all this in this one, or do other one first and implement it there instead or what......?!??!
 '''
 
 
@@ -196,6 +199,7 @@ class GA:
     def next_generation(self, start_position):
         # sort based on fitness
         self.generation.sort(key=lambda runner: runner.fitness, reverse=True)
+        print('gen: ', str(self.generation_count), '\t\t', 'best fit: ', int(self.generation[0].fitness))
         
         next_gen = []
         for i in range(GENERATION_SIZE):
@@ -204,9 +208,9 @@ class GA:
             child_genome = parents[0].genome[:genome_split] + parents[1].genome[genome_split:]
             
             #mutate
-            for gene in child_genome:
+            for index, value in enumerate(child_genome):
                 if MUTATION_RATE > r.randrange(100):
-                    gene = r.choice(GENES)
+                    child_genome[index] = r.choice(GENES)
                     
             
             
@@ -224,7 +228,7 @@ def run():
     
         
     grid = Grid()
-    grid.load_grid(MAZE2)
+    grid.load_grid(MAZE1)
     
     ga = GA(grid.start_position)
         
@@ -250,7 +254,6 @@ def run():
             
             #pygame.time.delay(100)
         
-        print('gen: ', str(ga.generation_count), '\t\t', 'best fit: ', int(ga.generation[0].fitness))
         ga.next_generation(grid.start_position)
 
 run()
