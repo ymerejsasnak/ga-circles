@@ -23,9 +23,9 @@ SOUTH = (0, 1)
 WEST = (-1, 0)
 GENES = (NORTH, EAST, SOUTH, WEST)
 
-GENERATION_SIZE = 1000
-REPRODUCER_GROUP_SIZE = 50
-MUTATION_RATE = 40
+GENERATION_SIZE = 100
+REPRODUCER_GROUP_SIZE = 20
+MUTATION_RATE = 10
 
 
 
@@ -224,7 +224,7 @@ def run():
     
         
     grid = Grid()
-    grid.load_grid(MAZE3)
+    grid.load_grid(MAZE2)
     
     ga = GA(grid.start_position)
         
