@@ -30,16 +30,10 @@ MUTATION_RATE = 5
 
 
 '''notes:
-maybe completely change genome so that it is a series of instructions for what to do
-(nesw) depending on 4 cell neighborhood (nesw) states (wall, not visited, visited) 
-[this will be 4 (neighbors) * 3 possible states = 12 'situations' to have instructions for]
-[but maybe also check zone rating for < or > if not visited...so all states are
-wall, visited, not-visited lower rating, not-visited same rating, and not-visted greater rating,
-which is 5 * 4 neighbors = 20 possible situations...still easy to code for...DO IT!]
-therefore it can naturally select for better strategies rather than better
-meaningless strings of random directions
-(this should be able to evolve better solutions, especially to harder maps like MAZE3)
+trashed state-based implementation (getting caught in loops, this one works okay,
+want to move on)
 
+but?:
 also add options for only showing best fit run  (or best and worst or best x runs or whatever)
 also store generations and let it run for a while so user cna just pick which gen to watch?
 all this in this one, or do other one first and implement it there instead or what......?!??!
